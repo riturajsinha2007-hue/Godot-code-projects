@@ -1,3 +1,45 @@
-//in this file there are code only relates to 2d player movment/sprits/collision 
+#cahrge jump(spacehold),left-right(left-rightkey)
+extends CharacterBody2D
 
-//normal left right movment and normaljump and also charge jump code
+const SPEED = 150.0
+const MAX_CHARGE = 0.5        # seconds to fully charge
+const MIN_JUMP_FORCE = -200.0
+const MAX_JUMP_FORCE = -500.0
+
+var charge_time = 0.0
+var is_charging = false
+
+func _physics_process(delta: float) -> void:
+	# Gravity
+	if not is_on_floor():
+		velocity += get_gravity() * delta
+
+	# Start charging when jump is pressed on floor
+	if Input.is_action_pressed("ui_accept") and is_on_floor():
+		is_charging = true
+		charge_time = clamp(charge_time + delta, 0, MAX_CHARGE)
+	
+	# Release jump
+	if Input.is_action_just_released("ui_accept") and is_charging:
+		var t = charge_time / MAX_CHARGE
+		var jump_force = lerp(MIN_JUMP_FORCE, MAX_JUMP_FORCE, t)
+		
+		# Angular jump: add horizontal velocity based on input
+		var direction := Input.get_axis("ui_left", "ui_right")
+		velocity.x = direction * SPEED
+		velocity.y = jump_force
+		
+		# Reset charge
+		is_charging = false
+		charge_time = 0.0
+
+	# Normal horizontal movement when not jumping
+	if not is_charging:
+		var direction := Input.get_axis("ui_left", "ui_right")
+		if direction:
+			velocity.x = direction * SPEED
+		else:
+			velocity.x = move_toward(velocity.x, 0, SPEED)
+
+	move_and_slide()
+
